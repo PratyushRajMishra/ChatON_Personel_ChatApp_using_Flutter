@@ -64,7 +64,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   void cropImage(XFile file) async {
     CroppedFile? croppedImage = await ImageCropper().cropImage(
         sourcePath: file.path,
-        aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         compressQuality: 10);
     if (croppedImage != null) {
       setState(() {
@@ -78,7 +78,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text('Change profile picture'),
+            title: const Text('Change profile picture'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -87,16 +87,16 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                     Navigator.pop(context);
                     selectImage(ImageSource.gallery);
                   },
-                  leading: Icon(Icons.photo),
-                  title: Text('Select from gallery'),
+                  leading: const Icon(Icons.photo),
+                  title: const Text('Select from gallery'),
                 ),
                 ListTile(
                   onTap: () {
                     Navigator.pop(context);
                     selectImage(ImageSource.camera);
                   },
-                  leading: Icon(Icons.camera_alt),
-                  title: Text('Take a photo'),
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take a photo'),
                 )
               ],
             ),
@@ -121,40 +121,61 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     final updatedMobile = mobileController.text.trim();
     final updatedAbout = aboutController.text.trim();
 
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(widget.firebaseUser.uid).update({
-        'fullname': updatedFullName,
-        'mobile': updatedMobile,
-        'about': updatedAbout,
-        'profilepic': imageUrl,
-        // Add other fields you want to update
-      });
+    // Check if there are changes in the data
+    if (updatedFullName != widget.userModel.fullname ||
+        updatedMobile != widget.userModel.mobile ||
+        updatedAbout != widget.userModel.about ||
+        imageUrl != widget.userModel.profilepic) {
+      try {
+        // Update the data in Firebase Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.firebaseUser.uid)
+            .update({
+          'fullname': updatedFullName,
+          'mobile': updatedMobile,
+          'about': updatedAbout,
+          'profilepic': imageUrl,
+          // Add other fields you want to update
+        });
 
-      // Close the CircularProgressIndicator dialog
-      Navigator.pop(context);
+        // Close the CircularProgressIndicator dialog
+        Navigator.pop(context);
 
-      // Show a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Profile updated successfully.'),
-          backgroundColor: Colors.black,
-          action: SnackBarAction(
-            label: 'Ok',
-            textColor: Colors.white,
-            onPressed: () {},
+        // Show a success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile updated successfully.'),
+            backgroundColor: Colors.black,
+            action: SnackBarAction(
+              label: 'Ok',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
-        ),
-      );
-    } catch (error) {
-      // Handle errors
+        );
+      } catch (error) {
+        // Handle errors
+        // Close the CircularProgressIndicator dialog
+        Navigator.pop(context);
+
+        // Show an error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
       // Close the CircularProgressIndicator dialog
       Navigator.pop(context);
 
-      // Show an error message
+      // Show an error message for no changes
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating profile: $error'),
-          backgroundColor: Colors.red,
+        const SnackBar(
+          content: Text('No changes were made.'),
+          backgroundColor: Colors.orange, // You can choose an appropriate color
         ),
       );
     }
@@ -391,7 +412,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                                       Colors.lightGreenAccent.shade200,
                                   shape: const StadiumBorder()),
                               onPressed: () {
-                                dataUpdate;
+                                dataUpdate(context);
                               },
                               child: const Text(
                                 'Save changes',
