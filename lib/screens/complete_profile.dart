@@ -25,6 +25,8 @@ class CompleteProfile extends StatefulWidget {
 class _CompleteProfileState extends State<CompleteProfile> {
   File? imageFile;
   TextEditingController fullNameController = TextEditingController();
+  TextEditingController aboutController = TextEditingController();
+  TextEditingController mobileController = TextEditingController();
 
   void selectImage(ImageSource source) async {
     XFile? pickedFile = await ImagePicker().pickImage(source: source);
@@ -79,7 +81,9 @@ class _CompleteProfileState extends State<CompleteProfile> {
 
   void checkValues() {
     String fullname = fullNameController.text.trim();
-    if (fullname == '' || imageFile == null) {
+    String about = aboutController.text.trim();
+    String mobile = mobileController.text.trim();
+    if (fullname == ''|| about == '' || mobile == '' || imageFile == null) {
       UIHelper.shoeAlertDialog(context, "Incomplete Data", "Please fill all the fields and "
           "upload a profile picture");
     } else {
@@ -100,8 +104,12 @@ class _CompleteProfileState extends State<CompleteProfile> {
 
     String? imageUrl = await snapshot.ref.getDownloadURL();
     String? fullname = fullNameController.text.trim();
+    String? about = aboutController.text.trim();
+    String? mobile = mobileController.text.trim();
 
     widget.userModel.fullname = fullname;
+    widget.userModel.about = about;
+    widget.userModel.mobile = mobile;
     widget.userModel.profilepic = imageUrl;
 
     await FirebaseFirestore.instance
@@ -136,7 +144,7 @@ class _CompleteProfileState extends State<CompleteProfile> {
             child: ListView(
               children: [
                 SizedBox(
-                  height: 20,
+                  height: 50,
                 ),
                 CupertinoButton(
                   onPressed: () {
@@ -144,7 +152,7 @@ class _CompleteProfileState extends State<CompleteProfile> {
                   },
                   child: CircleAvatar(
                     backgroundColor: Colors.green[400],
-                    radius: 80,
+                    radius: 90,
                     backgroundImage:
                         (imageFile != null) ? FileImage(imageFile!) : null,
                     child: (imageFile == null)
@@ -157,15 +165,35 @@ class _CompleteProfileState extends State<CompleteProfile> {
                   ),
                 ),
                 SizedBox(
-                  height: 20,
+                  height: 30,
                 ),
                 TextField(
                   controller: fullNameController,
                   decoration: InputDecoration(labelText: 'Full name'),
                 ),
                 SizedBox(
-                  height: 40,
+                  height: 20,
                 ),
+
+                TextField(
+                  controller: aboutController,
+                  decoration: InputDecoration(labelText: 'About'),
+                ),
+
+                SizedBox(
+                  height: 20,
+                ),
+
+                TextField(
+                  controller: mobileController,
+                  decoration: InputDecoration(labelText: 'Mobile no.'),
+                ),
+
+
+                SizedBox(
+                  height: 60,
+                ),
+
                 CupertinoButton(
                     child: Text(
                       'SUBMIT',

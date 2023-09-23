@@ -1,9 +1,12 @@
 import 'dart:developer';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chaton/main.dart';
 import 'package:chaton/models/MessageModel.dart';
+import 'package:chaton/screens/targetProfile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/ChatRoomModel.dart';
@@ -29,15 +32,26 @@ class ChatRoomPage extends StatefulWidget {
 class _ChatRoomPageState extends State<ChatRoomPage> {
   TextEditingController messageController = TextEditingController();
 
+  void clearChat(messageid) async {
+    await FirebaseFirestore.instance
+        .collection("chatrooms")
+        .doc(widget.chatroom.chatroomid)
+        .collection("messages")
+        .doc(messageid)
+        .delete();
+  }
+
   void sendMessage() async {
     String msg = messageController.text.trim();
     messageController.clear();
+
+    DateTime sentTime= DateTime.now();
 
     if (msg != "") {
       MessageModel newMessage = MessageModel(
         messageid: uuid.v1(),
         sender: widget.userModel.uid,
-        createdon: DateTime.now(),
+        createdon: sentTime,
         text: msg,
         seen: false,
       );
@@ -50,8 +64,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           .set(newMessage.toMap());
 
       widget.chatroom.lastMessage = msg;
-      FirebaseFirestore.instance.collection("chatrooms").doc(
-        widget.chatroom.chatroomid).set(widget.chatroom.toMap());
+      FirebaseFirestore.instance
+          .collection("chatrooms")
+          .doc(widget.chatroom.chatroomid)
+          .set(widget.chatroom.toMap());
+
+      widget.chatroom.lastMsgtime = sentTime;
+      FirebaseFirestore.instance
+          .collection("chatrooms")
+          .doc(widget.chatroom.chatroomid)
+          .set(widget.chatroom.toMap());
 
       print("Message Sent!");
     }
@@ -62,19 +84,36 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     return Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
-          title: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.grey,
-                backgroundImage:
-                    NetworkImage(widget.targetUser.profilepic.toString()),
+          title: Row(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100.0),
+              child: CachedNetworkImage(
+                imageUrl: widget.targetUser.profilepic.toString(),
+                width: 40,
+                height: 40,
+                fit: BoxFit.fill,
+                errorWidget: (context, url, error) => CircleAvatar(
+                  child: Icon(CupertinoIcons.person),
+                ),
               ),
-              SizedBox(
-                width: 10,
-              ),
-              Text(widget.targetUser.fullname.toString()),
-            ],
-          ),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            InkWell(
+              child: Container(
+                  height: 40,
+                  child: Center(
+                      child: Text(widget.targetUser.fullname.toString()))),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return TargetProfilePage(
+                      targetUser: widget.targetUser,
+                      firebaseUser: widget.firebaseUser);
+                }));
+              },
+            ),
+          ]),
         ),
         body: SafeArea(
           child: Container(
@@ -112,24 +151,24 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                     : MainAxisAlignment.start,
                                 children: [
                                   Container(
-                                      margin: EdgeInsets.symmetric(
-                                        vertical: 2,
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: 10, horizontal: 10),
-                                      decoration: BoxDecoration(
-                                        color: (currentMessage.sender ==
-                                                widget.userModel.uid)
-                                            ? Colors.green[400]
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .secondary,
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child:
-                                          Text(currentMessage.text.toString(),
-                                              style: TextStyle(color: Colors.white),
-                                          ),
+                                    margin: EdgeInsets.symmetric(
+                                      vertical: 2,
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 10, horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: (currentMessage.sender ==
+                                              widget.userModel.uid)
+                                          ? Colors.green[400]
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .secondary,
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: Text(
+                                      currentMessage.text.toString(),
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ],
                               );
