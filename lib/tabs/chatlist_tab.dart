@@ -90,7 +90,7 @@ class _ChatPageState extends State<ChatPage> {
       final snackBar = SnackBar(
         backgroundColor: Colors.black,
         behavior: SnackBarBehavior.floating,
-        content: Text("Chat deleted successfully."), // Use the message parameter here
+        content: const Text("Chat deleted successfully."), // Use the message parameter here
         action: SnackBarAction(
           label: 'Ok',
           onPressed: () {},
@@ -193,7 +193,7 @@ class _ChatPageState extends State<ChatPage> {
 
                   if (chatRoomSnapshot.docs.isEmpty) {
                     // Display a message when there are no chat rooms
-                    return Center(
+                    return const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -234,7 +234,7 @@ class _ChatPageState extends State<ChatPage> {
                   } else {
                     return ListView.builder(
                       itemCount: chatRoomSnapshot.docs.length,
-                      physics: BouncingScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
                         ChatRoomModel chatRoomModel =
                         ChatRoomModel.fromMap(chatRoomSnapshot.docs[index]
@@ -289,14 +289,14 @@ class _ChatPageState extends State<ChatPage> {
                                                     child: Text(
                                                       targetUser.fullname
                                                           .toString(),
-                                                      style: TextStyle(
+                                                      style: const TextStyle(
                                                         fontWeight:
                                                         FontWeight.w600,
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                                Divider(
+                                                const Divider(
                                                   color: Colors.black54,
                                                 ),
                                                 ListTile(
@@ -306,12 +306,12 @@ class _ChatPageState extends State<ChatPage> {
                                                       deleteDialog(
                                                           chatRoomModel);
                                                     },
-                                                    icon: Icon(
+                                                    icon: const Icon(
                                                       Icons.delete,
                                                       color: Colors.black54,
                                                       size: 25.0,
                                                     ),
-                                                    label: Text(
+                                                    label: const Text(
                                                       'Delete chat',
                                                       style: TextStyle(
                                                         fontSize: 16,
@@ -351,7 +351,7 @@ class _ChatPageState extends State<ChatPage> {
                                                         fit: BoxFit.fill,
                                                         errorWidget: (context,
                                                             url, error) =>
-                                                            CircleAvatar(
+                                                            const CircleAvatar(
                                                               child: Icon(
                                                                 CupertinoIcons
                                                                     .person,
@@ -359,7 +359,7 @@ class _ChatPageState extends State<ChatPage> {
                                                             ),
                                                       ),
                                                     ),
-                                                    label: Text(
+                                                    label: const Text(
                                                       'View Profile',
                                                       style: TextStyle(
                                                         fontSize: 16,
@@ -437,12 +437,12 @@ class _ChatPageState extends State<ChatPage> {
                     child: Text(snapshot.error.toString()),
                   );
                 } else {
-                  return Center(
+                  return const Center(
                     child: Text("No chats"),
                   );
                 }
               } else {
-                return Center(
+                return const Center(
                   child: CircularProgressIndicator(),
                 );
               }
@@ -459,7 +459,7 @@ class _ChatPageState extends State<ChatPage> {
             );
           }),
         ),
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
         backgroundColor: Colors.green[400],
       ),
     );

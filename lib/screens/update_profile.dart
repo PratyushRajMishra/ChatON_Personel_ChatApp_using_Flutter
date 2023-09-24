@@ -41,7 +41,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     aboutController = TextEditingController(text: widget.userModel.about.toString());
   }
 
-  // ... Rest of your code ...
 
   @override
   void dispose() {

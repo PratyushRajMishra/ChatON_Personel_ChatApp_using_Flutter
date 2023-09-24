@@ -1,7 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:chaton/screens/about_screen.dart';
-import 'package:chaton/screens/notifications_screen.dart';
+import 'package:chaton/settings/about_screen.dart';
+import 'package:chaton/settings/blockedusers.dart';
+import 'package:chaton/settings/groupchats.dart';
+import 'package:chaton/settings/notifications_screen.dart';
+import 'package:chaton/settings/security_screen.dart';
 import 'package:chaton/screens/update_profile.dart';
+import 'package:chaton/settings/storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +166,14 @@ class _SettingPageState extends State<SettingPage> {
                   ),
 
                 ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) {
+                        return  SecurityPage(userModel: widget.userModel, firebaseUser: widget.firebaseUser,);
+                      }),
+                    );
+                  },
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -186,7 +197,14 @@ class _SettingPageState extends State<SettingPage> {
                 ),
 
                 ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) {
+                        return  const StoragePage();
+                      }),
+                    );
+                  },
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -214,7 +232,14 @@ class _SettingPageState extends State<SettingPage> {
                 const SizedBox(height: 10,),
 
                 ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) {
+                        return  const GroupChatsPage();
+                      }),
+                    );
+                  },
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -238,7 +263,14 @@ class _SettingPageState extends State<SettingPage> {
                 ),
 
                 ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) {
+                        return  const BlockedUsersPage();
+                      }),
+                    );
+                  },
                   leading: Container(
                     width: 40,
                     height: 40,
