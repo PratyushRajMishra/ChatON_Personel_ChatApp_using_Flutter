@@ -5,16 +5,21 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:chaton/models/UserModel.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:chaton/main.dart';
-import 'package:shimmer/main.dart';
+
+late final UserModel userModel;
+late final User firebaseUser;
+
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    await tester.pumpWidget(const MyApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

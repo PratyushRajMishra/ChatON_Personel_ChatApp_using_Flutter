@@ -72,11 +72,11 @@ class _TargetProfilePageState extends State<TargetProfilePage> {
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.transparent,
-          leading: BackButton(
+          leading: IconButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            color: Colors.blueGrey,
+            color: Colors.blueGrey, icon: Icon(Icons.close_rounded, size: 30,),
           ),
         ),
         body: SafeArea(

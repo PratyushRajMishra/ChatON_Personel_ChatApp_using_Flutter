@@ -37,7 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   firebase_core: ^2.9.0
   firebase_auth: ^4.6.3
-  cloud_firestore: ^4.8.1
+  cloud_firestore: ^4.9.2
   firebase_storage: ^11.2.3
   image_picker: ^1.0.4
   image_cropper: ^4.0.1
@@ -47,6 +47,23 @@ dependencies:
   shimmer: ^3.0.0
   share_plus: ^7.1.0
   provider: ^6.0.5
+  file_picker: ^5.5.0
+  permission_handler: ^11.0.0
+  emoji_picker_flutter: ^1.6.1
+  shared_preferences: ^2.2.1
+  video_player: ^2.7.2
+  intl: ^0.17.0
+  flutter_native_splash: ^2.3.2
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/splashbg.png
+  color_dark: "#1a1a1a"
+  image_dark: assets/splashbg.png
+  android: true
+  ios: true
+
+
 
 
 dev_dependencies:

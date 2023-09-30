@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/UIHelper.dart';
 import '../models/UserModel.dart';
+import '../settings/security_screen.dart';
 
 class UpdateProfilePage extends StatefulWidget {
   final UserModel userModel;
@@ -188,7 +189,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       action: SnackBarAction(
         label: 'Ok',
         textColor: Colors.white,
-        onPressed: () {},
+        onPressed: () {
+        },
       ),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);

@@ -1,7 +1,10 @@
+import 'package:chaton/models/UIHelper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/UserModel.dart';
+import '../screens/login_screen.dart';
 
 class SecurityPage extends StatefulWidget {
   final UserModel userModel;
@@ -40,134 +43,233 @@ class _SecurityPageState extends State<SecurityPage> {
     super.dispose();
   }
 
+  Future<void> updateEmail() async{
+    UIHelper.showLoadingDialog(context, 'Changing Email');
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await user!.updateEmail(emailController.text);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.firebaseUser.uid)
+          .update({
+        'email': emailController.text,
+
+      });
+
+      // Update the email in your UserModel or wherever you store it
+      // widget.userModel.email = newEmailController.text;
+      FirebaseAuth.instance.signOut();
+
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+
+
+
+      // Show a success message using Flushbar or SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.black,
+          content: Text("Email changed!"),
+          action: SnackBarAction(label: 'Login again',
+              textColor: Colors.white, onPressed: () {}),
+        ),
+      );
+    } catch (error) {
+      print('Error changing email: $error');
+      // Handle any errors here and show an error message if needed
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Error changing email: $error"),
+        ),
+      );
+    }
+  }
+
+
   void changeEmail() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          height: 200,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.person,
-                      color: Colors.blue,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide:
-                          const BorderSide(color: Colors.blue, width: 1.0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide:
-                          const BorderSide(color: Colors.grey, width: 1.0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    label: const Text(
-                      'Email',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),// Wrap the content in SingleChildScrollView
+          child: Container(
+            height: 200,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(
+                        Icons.person,
+                        color: Colors.blue,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide:
+                        const BorderSide(color: Colors.blue, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide:
+                        const BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      label: const Text(
+                        'Email',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    side: BorderSide.none,
-                    backgroundColor: Colors.lightGreenAccent.shade200,
-                    shape: const StadiumBorder(),
+                  SizedBox(
+                    height: 25,
                   ),
-                  onPressed: () {},
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      side: BorderSide.none,
+                      backgroundColor: Colors.lightGreenAccent.shade200,
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: () {
+                      updateEmail();
+                    },
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
+
+
+
+  Future<void> updatePassword() async {
+    UIHelper.showLoadingDialog(context, 'Changing Password');
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await user!.updatePassword(newpasswordController.text);
+
+      FirebaseAuth.instance.signOut();
+
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.black,
+          content: Text("Password changed!"),
+          action: SnackBarAction(label: 'Login again',
+              textColor: Colors.white, onPressed: () {}),
+        ),
+      );
+    } catch (error) {
+      print('Error changing password: $error');
+      // Handle any errors here and show an error message if needed
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Error changing password: $error"),
+        ),
+      );
+    }
+  }
+
 
 
   void changePassword() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          height: 200,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: newpasswordController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.password_sharp,
-                      color: Colors.blue,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide:
-                      const BorderSide(color: Colors.blue, width: 1.0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide:
-                      const BorderSide(color: Colors.grey, width: 1.0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    label: const Text(
-                      'New Password',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            height: 200,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: newpasswordController,
+                    obscureText: true, // To hide the entered password
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(
+                        Icons.password_sharp,
+                        color: Colors.blue,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      label: const Text(
+                        'New Password',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    side: BorderSide.none,
-                    backgroundColor: Colors.lightGreenAccent.shade200,
-                    shape: const StadiumBorder(),
+                  SizedBox(
+                    height: 25,
                   ),
-                  onPressed: () {},
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      side: BorderSide.none,
+                      backgroundColor: Colors.lightGreenAccent.shade200,
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: () {
+                      // Call a function to update the password here
+                      updatePassword();
+                    },
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
+
 
   void deleteAccount() {
     showDialog(
