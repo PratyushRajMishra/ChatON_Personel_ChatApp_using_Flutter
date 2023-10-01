@@ -14,10 +14,12 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/ChatRoomModel.dart';
+import '../models/FullScreenImage.dart';
 import '../models/UserModel.dart';
-import '../models/VideoPlayerWidget.dart';
+import '../models/FullScreenVideoPlayer.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final UserModel targetUser;
@@ -37,6 +39,44 @@ class ChatRoomPage extends StatefulWidget {
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
+  VideoPlayerController? _videoPlayerController;
+
+  @override
+  @override
+  void initState() {
+    super.initState();
+    // Retrieve the message corresponding to the video from Firestore or your data source
+    // Replace 'yourMessageId' with the actual ID of the video message
+    FirebaseFirestore.instance
+        .collection("chatrooms")
+        .doc(widget.chatroom.chatroomid)
+        .collection("messages")
+        .doc('yourMessageId') // Replace with the actual message ID
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        // Create a MessageModel object from the document data
+        MessageModel videoMessage = MessageModel.fromMap(
+          documentSnapshot.data() as Map<String, dynamic>,
+        );
+
+        if (videoMessage.fileType == 'video') {
+          _videoPlayerController = VideoPlayerController.network(
+            videoMessage.fileUrl.toString(),
+          )..initialize().then((_) {
+              setState(() {});
+            });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.dispose();
+    super.dispose();
+  }
+
   TextEditingController messageController = TextEditingController();
 
   void sendMessage(String textMessage, String fileUrl, String fileType) async {
@@ -88,7 +128,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   }
 
   Future<void> pickCamera() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.camera);
+    XFile? pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.camera);
 
     if (pickedFile != null) {
       // Get the picked image file
@@ -122,7 +163,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       }
     }
   }
-
 
   Future<void> pickFile() async {
     try {
@@ -202,44 +242,55 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         titleSpacing: 0,
-        title: Row(children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100.0),
-            child: CachedNetworkImage(
-              imageUrl: widget.targetUser.profilepic.toString(),
-              width: 40,
-              height: 40,
-              fit: BoxFit.fill,
-              errorWidget: (context, url, error) => CircleAvatar(
-                child: Icon(CupertinoIcons.person),
+        title: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100.0),
+              child: CachedNetworkImage(
+                imageUrl: widget.targetUser.profilepic.toString(),
+                width: 40,
+                height: 40,
+                fit: BoxFit.fill,
+                errorWidget: (context, url, error) => CircleAvatar(
+                  child: Icon(CupertinoIcons.person),
+                ),
               ),
             ),
-          ),
-          SizedBox(
-            width: 10,
-          ),
-          InkWell(
-            child: Container(
+            SizedBox(
+              width: 10,
+            ),
+            InkWell(
+              child: Container(
                 height: 40,
-                child:
-                    Center(child: Text(widget.targetUser.fullname.toString()))),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) {
-                return TargetProfilePage(
+                child: Center(child: Text(widget.targetUser.fullname.toString())),
+              ),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return TargetProfilePage(
                     targetUser: widget.targetUser,
-                    firebaseUser: widget.firebaseUser);
-              }));
+                    firebaseUser: widget.firebaseUser,
+                  );
+                }));
+              },
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.call), // Add the call icon here
+            onPressed: () {
+              // Handle the call button press here
             },
           ),
-        ]),
+        ],
       ),
+
       body: Container(
         decoration: BoxDecoration(
           color: Colors.green.shade50,
@@ -293,7 +344,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 15.0, left: 15.0),
+                padding: const EdgeInsets.only(
+                    right: 75.0, left: 15.0, bottom: 15.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -330,38 +382,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             Icons.camera_alt_rounded,
                             color: Colors.black38,
                           )),
-
-                      const SizedBox(width: 10.0,),
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
-                            color: Colors.green.shade800),
-                        child: IconButton(
-                          onPressed: () {
-                            // Get the text message from the input field
-                            String textMessage = messageController.text.trim();
-
-                            // Check if the message is not empty
-                            if (textMessage.isNotEmpty) {
-                              // Initialize fileUrl and fileType to empty strings
-                              String fileUrl = '';
-                              String fileType = '';
-
-                              // Call the sendMessage function with the obtained values
-                              sendMessage(textMessage, fileUrl, fileType);
-
-                              // Clear the input field
-                              messageController.clear();
-                            }
-                          },
-                          icon: Icon(
-                            Icons.send,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -369,6 +389,35 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green.shade800,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50.0),
+        ),
+        onPressed: () {
+          // Get the text message from the input field
+          String textMessage = messageController.text.trim();
+
+          // Check if the message is not empty
+          if (textMessage.isNotEmpty) {
+            // Initialize fileUrl and fileType to empty strings
+            String fileUrl = '';
+            String fileType = '';
+
+            // Call the sendMessage function with the obtained values
+            sendMessage(textMessage, fileUrl, fileType);
+
+            // Clear the input field
+            messageController.clear();
+          }
+        },
+        child: Icon(
+          Icons.send,
+          color: Colors.white,
+          size: 25,
+        ), // Change the icon as needed
       ),
     );
   }
@@ -413,50 +462,66 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   Widget buildMediaMessage(MessageModel message) {
     if (message.fileType == 'image') {
-      return Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.white, // Border color
-            width: 3.0, // Border width
+      return GestureDetector(
+        onTap: () {
+          // Show the full-screen image dialog when the image is tapped
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return FullScreenImageDialog(imageUrl: message.fileUrl.toString());
+            },
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.white, // Border color
+              width: 3.0, // Border width
+            ),
+            borderRadius: BorderRadius.circular(10),
           ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(7),
-          child: CachedNetworkImage(
-            imageUrl: message.fileUrl.toString(),
-            width: 175,
-            height: 250,
-            fit: BoxFit.cover,
-            errorWidget: (context, url, error) => Center(
-              child: Text(
-                'Error loading image',
-                style: TextStyle(color: Colors.red),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: CachedNetworkImage(
+              imageUrl: message.fileUrl.toString(),
+              width: 175,
+              height: 250,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Center(
+                child: Text(
+                  'Error loading image',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
             ),
           ),
         ),
       );
     } else if (message.fileType == 'video') {
-      return Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.white, // Border color
-            width: 3.0, // Border width
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(7), // Adjust the radius as needed
-          child: VideoPlayerWidget(videoUrl: message.fileUrl.toString()),
-        ),
-      );
-    } else {
-      return Text(
-        "Unsupported file type: ${message.fileType}",
-        style: TextStyle(color: Colors.white),
+      return GestureDetector(
+        onTap: () {
+          // Show the video in full-screen mode when tapped
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => FullScreenVideoPlayer(
+                videoUrl: message.fileUrl.toString(),
+              ),
+            ),
+          );
+        },
+        child: buildVideoThumbnail(
+          message.fileUrl.toString(),
+        ), // Replace with actual video duration
       );
     }
+
+    // Placeholder for unsupported file types (you can customize this)
+    return Container(
+      child: Text(
+        "Unsupported file type: ${message.fileType}",
+        style: TextStyle(color: Colors.red),
+      ),
+    );
   }
 
   Widget buildTextMessage(MessageModel message) {
@@ -474,4 +539,122 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       ),
     );
   }
+}
+
+Widget buildVideoThumbnail(String videoUrl) {
+  final videoPlayerController = VideoPlayerController.network(videoUrl);
+
+  return FutureBuilder(
+    future: videoPlayerController.initialize(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.done) {
+        final duration = videoPlayerController.value.duration;
+        final durationText = _formatDuration(duration);
+
+        return Container(
+          width: 225,
+          height: 350,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.white, // Border color
+              width: 3.0, // Border width
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10), // Make it circular
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(videoPlayerController),
+                Icon(
+                  Icons.play_circle_fill,
+                  size: 50,
+                  color: Colors.white,
+                ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      durationText,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      else {
+        return Container(
+          width: 225,
+          height: 350,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.white, // Border color
+              width: 3.0, // Border width
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CachedNetworkImage(
+                imageUrl: videoUrl,
+                width: 225,
+                height: 350,
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.black,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.play_circle_fill,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.play_circle_fill,
+                size: 50,
+                color: Colors.white,
+              ),
+              Positioned(
+                bottom: 10,
+                right: 10,
+                child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Icon(
+                      Icons.watch_later_outlined,
+                      color: Colors.white,
+                      size: 15,
+                    )),
+              ),
+            ],
+          ),
+        );
+      }
+    },
+  );
+}
+
+String _formatDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }

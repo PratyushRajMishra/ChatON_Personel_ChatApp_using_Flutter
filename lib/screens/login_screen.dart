@@ -63,32 +63,134 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _showForgotPasswordDialog() {
+    TextEditingController emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Forgot Password?"),
+          content: TextField(
+            controller: emailController,
+            decoration: InputDecoration(
+              hintText: "Enter your email",
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Reset Password"),
+              onPressed: () async {
+                String email = emailController.text.trim();
+
+                if (email.isNotEmpty) {
+                  try {
+                    await FirebaseAuth.instance.sendPasswordResetEmail(
+                      email: email,
+                    );
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Please check your email to reset your password.",
+                        ),
+                        duration: Duration(seconds: 5), // Adjust the duration as needed
+                      ),
+                    );
+                  } on FirebaseAuthException catch (ex) {
+                    UIHelper.shoeAlertDialog(
+                      context,
+                      "An error occurred",
+                      ex.message.toString(),
+                    );
+                  }
+                } else {
+                  UIHelper.shoeAlertDialog(
+                    context,
+                    "Incomplete Data",
+                    "Please enter your email.",
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: 25),
           child: Center(
             child: SingleChildScrollView(
               child: Column(
                 children: [
                   Image.asset('assets/splash.png'),
                   SizedBox(
-                    height: 40,
+                    height: 80,
                   ),
-                  TextField(
+                  TextFormField(
                     controller: emailController,
-                    decoration: InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.email_outlined, color: Colors.black,),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        label: Text('Email', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                    ),
                   ),
                   SizedBox(
-                    height: 10,
+                    height: 25,
                   ),
-                  TextField(
-                    controller: passwordController,
+                  TextFormField(
                     obscureText: true,
-                    decoration: InputDecoration(labelText: 'Password'),
+                    controller: passwordController,
+                    decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.password_outlined, color: Colors.black,),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        label: Text('Password', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                    ),
                   ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: Colors.amber.shade900, // Customize the color as needed
+                        ),
+                      ),
+                      onPressed: () {
+                        _showForgotPasswordDialog();
+                      },
+                    ),
+                  ),
+
                   SizedBox(
                     height: 50,
                   ),
@@ -112,10 +214,10 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "Dont't have an account",
+              "Dont't have an account?",
               style: TextStyle(fontSize: 16),
             ),
-            CupertinoButton(
+            TextButton(
                 child: Text('Sign up',
                     style: TextStyle(
                         fontSize: 16,

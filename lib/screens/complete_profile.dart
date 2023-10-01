@@ -132,6 +132,7 @@ class _CompleteProfileState extends State<CompleteProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
         backgroundColor: Colors.green[400],
         automaticallyImplyLeading: false,
         centerTitle: true,
@@ -139,7 +140,7 @@ class _CompleteProfileState extends State<CompleteProfile> {
       ),
       body: SafeArea(
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: 25),
           child: Center(
             child: ListView(
               children: [
@@ -167,26 +168,56 @@ class _CompleteProfileState extends State<CompleteProfile> {
                 SizedBox(
                   height: 30,
                 ),
-                TextField(
+                TextFormField(
                   controller: fullNameController,
-                  decoration: InputDecoration(labelText: 'Full name'),
+                  decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      label: Text('Full Name', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                  ),
                 ),
                 SizedBox(
-                  height: 20,
+                  height: 25,
                 ),
 
-                TextField(
+                TextFormField(
                   controller: aboutController,
-                  decoration: InputDecoration(labelText: 'About'),
+                  decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      label: Text('About', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                  ),
                 ),
 
                 SizedBox(
-                  height: 20,
+                  height: 25,
                 ),
 
-                TextField(
+                TextFormField(
                   controller: mobileController,
-                  decoration: InputDecoration(labelText: 'Mobile no.'),
+                  decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      label: Text('Mobile no.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                  ),
                 ),
 
 

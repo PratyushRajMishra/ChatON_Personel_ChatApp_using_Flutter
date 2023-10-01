@@ -74,34 +74,62 @@ class _SignupPageState extends State<SignupPage> {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: 25),
           child: Center(
             child: SingleChildScrollView(
               child: Column(
                 children: [
                   Image.asset('assets/splash.png'),
                   SizedBox(
-                    height: 40,
+                    height: 70,
                   ),
-                  TextField(
+                  TextFormField(
                     controller: emailController,
-                    decoration: InputDecoration(labelText: 'Email address'),
+                    decoration: InputDecoration(
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        label: Text('Enter email', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                    ),
                   ),
                   SizedBox(
-                    height: 10,
+                    height: 25,
                   ),
-                  TextField(
+                  TextFormField(
                     controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        label: Text('Enter Password', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                    ),
                   ),
                   SizedBox(
-                    height: 10,
+                    height: 25,
                   ),
-                  TextField(
+                  TextFormField(
                     controller: cPasswordController,
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: 'Confirm Password'),
+                    decoration: InputDecoration(
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        label: Text('Confirm Password', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),)
+                    ),
                   ),
                   SizedBox(
                     height: 50,
@@ -126,10 +154,10 @@ class _SignupPageState extends State<SignupPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "Already have an account",
+              "Already have an account?",
               style: TextStyle(fontSize: 16),
             ),
-            CupertinoButton(
+            TextButton(
                 child: Text('Log in',
                     style: TextStyle(
                         fontSize: 16,
