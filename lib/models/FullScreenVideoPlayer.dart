@@ -57,7 +57,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
                     CircularProgressIndicator(),
                     SizedBox(height: 10), // Add some spacing
                     Text(
-                      'Downloading...',
+                      'Processing...',
                       style: TextStyle(fontSize: 16),
                     ),
                   ],

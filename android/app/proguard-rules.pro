@@ -1,1 +1,1 @@
--keep class **.zego.** { *; }
+-keep class io.agora.**{*;}

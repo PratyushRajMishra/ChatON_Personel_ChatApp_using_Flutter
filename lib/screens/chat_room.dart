@@ -1,25 +1,31 @@
 import 'dart:developer';
 import 'dart:io'; // Import 'File' from 'dart:io'
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chaton/main.dart';
+
 import 'package:chaton/models/MessageModel.dart';
 import 'package:chaton/screens/targetProfile.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/ChatRoomModel.dart';
 import '../models/FullScreenImage.dart';
 import '../models/UserModel.dart';
 import '../models/FullScreenVideoPlayer.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final UserModel targetUser;
@@ -127,42 +133,82 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
+
   Future<void> pickCamera() async {
-    XFile? pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.camera);
+    final PermissionStatus status = await Permission.camera.request();
 
-    if (pickedFile != null) {
-      // Get the picked image file
-      File imageFile = File(pickedFile.path);
+    if (status.isGranted) {
+      XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.camera);
 
-      // Upload the image to Firebase Storage
-      try {
-        final storageRef = FirebaseStorage.instance.ref().child(
-            'chat_files/${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}');
-        final uploadTask = storageRef.putFile(imageFile);
+      if (pickedFile != null) {
+        // Get the picked image file
+        File imageFile = File(pickedFile.path);
 
-        // Monitor the upload progress (optional)
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          double progress = snapshot.bytesTransferred / snapshot.totalBytes;
-          print('Upload progress: $progress');
-        });
+        // Compress the image
+        Uint8List? compressedImageData = await FlutterImageCompress.compressWithFile(
+          imageFile.path,
+          minHeight: 1920,
+          minWidth: 1080,
+          quality: 20,
+        );
 
-        // Wait for the upload to complete
-        await uploadTask;
+        if (compressedImageData != null) {
+          List<int> compressedImageBytes = compressedImageData.toList();
 
-        // Get the file URL
-        final fileUrl = await storageRef.getDownloadURL();
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                content: Row(
+                  children: [
+                    CircularProgressIndicator(), // Show a loading indicator
+                    SizedBox(width: 20),
+                    Text('Sending...'), // Show "Sending..." text
+                  ],
+                ),
+              );
+            },
+            barrierDismissible: false, // Prevent dismissing the dialog
+          );
 
-        // Create a message for the image
-        sendMessage("", fileUrl, 'image'); // Set an empty text for images
+          // Use a try-catch block to handle errors during the upload
+          try {
+            final storageRef = FirebaseStorage.instance.ref().child(
+                'chat_files/${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}');
+            final uploadTask = storageRef.putData(Uint8List.fromList(compressedImageBytes));
 
-        print("Image Sent!");
-      } catch (e) {
-        // Handle any errors when uploading the image
-        print("Error uploading image: $e");
+            // Wait for the upload to complete
+            await uploadTask;
+
+            // Get the file URL
+            final fileUrl = await storageRef.getDownloadURL();
+
+            // Create a message for the image
+            sendMessage("", fileUrl, 'image'); // Set an empty text for images
+
+            print("Image Sent!");
+          } catch (e) {
+            // Handle any errors when uploading the image
+            print("Error uploading image: $e");
+          } finally {
+            // Close the "Sending" dialog
+            Navigator.of(context).pop();
+          }
+        } else {
+          // Handle the case where compression fails
+          print("Image compression failed.");
+        }
       }
+    } else {
+      // Handle permission denied.
+      // You can show a message to the user or request permission again.
+      print("Camera permission denied.");
     }
   }
+
+
+
+
 
   Future<void> pickFile() async {
     try {
@@ -180,7 +226,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             'mov',
             'png',
             'jpg',
-            'jpeg'
+            'jpeg',
           ], // Specify allowed file extensions
         );
 
@@ -196,51 +242,139 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             fileType = 'image';
           }
 
-          // Upload the picked file to Firebase Storage
-          final storageRef = FirebaseStorage.instance.ref().child(
-              'chat_files/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
-          final uploadTask = storageRef.putFile(File(file.path.toString()));
-
-          // Monitor the upload progress (optional)
-          uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-            double progress = snapshot.bytesTransferred / snapshot.totalBytes;
-            print('Upload progress: $progress');
-          });
-
-          // Wait for the upload to complete
-          await uploadTask;
-
-          // Get the file URL
-          final fileUrl = await storageRef.getDownloadURL();
-
-          // Create a message based on file type
-          MessageModel newMessage = MessageModel(
-            messageid: uuid.v1(),
-            sender: widget.userModel.uid,
-            createdon: DateTime.now(),
-            text: "", // Leave text empty for images and videos
-            seen: false,
-            fileType: fileType,
-            fileUrl: fileUrl,
-          );
-
-          // Determine if it's an image or video and send accordingly
           if (fileType == 'image') {
-            sendMessage("", fileUrl, 'image'); // Set an empty text for images
-          } else if (fileType == 'video') {
-            sendMessage("", fileUrl, 'video'); // Set an empty text for videos
-          }
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  content: Row(
+                    children: [
+                      CircularProgressIndicator(), // Show a loading indicator
+                      SizedBox(width: 20),
+                      Text('Sending...'), // Show "Sending..." text
+                    ],
+                  ),
+                );
+              },
+              barrierDismissible: false, // Prevent dismissing the dialog
+            );
 
-          print("File Sent!");
+            // Compress the image
+            Uint8List? compressedImageData = await FlutterImageCompress.compressWithFile(
+              file.path.toString(),
+              minHeight: 1920,
+              minWidth: 1080,
+              quality: 20,
+            );
+
+            if (compressedImageData != null) {
+              // Create a compressed image file
+              File compressedImageFile = File('${file.path}_compressed.jpg');
+              await compressedImageFile.writeAsBytes(compressedImageData);
+
+              // Upload the compressed image to Firebase Storage
+              final storageRef = FirebaseStorage.instance.ref().child(
+                  'chat_files/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
+              final uploadTask = storageRef.putFile(compressedImageFile);
+
+              // Monitor the upload progress (optional)
+              uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+                double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+                print('Upload progress: $progress');
+              });
+
+              // Wait for the upload to complete
+              await uploadTask;
+
+              // Get the file URL
+              final fileUrl = await storageRef.getDownloadURL();
+
+              // Create a message for the compressed image
+              sendMessage("", fileUrl, 'image'); // Set an empty text for images
+
+              print("File Sent!");
+
+              // Close the "Sending" dialog
+              Navigator.of(context).pop();
+            } else {
+              // Handle the case where compression fails
+              print("Image compression failed.");
+              // Close the "Sending" dialog
+              Navigator.of(context).pop();
+            }
+          } else if (fileType == 'video') {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  content: Row(
+                    children: [
+                      CircularProgressIndicator(), // Show a loading indicator
+                      SizedBox(width: 20),
+                      Text('Sending...'), // Show "Sending..." text
+                    ],
+                  ),
+                );
+              },
+              barrierDismissible: false, // Prevent dismissing the dialog
+            );
+
+            final tempDir = await getTemporaryDirectory();
+            final compressedFilePath =
+                '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_compressed.mp4';
+
+            // Ensure file.path is not null before compressing
+            if (file.path != null) {
+              final mediaInfo = await VideoCompress.compressVideo(
+                file.path!,
+                quality: VideoQuality.LowQuality,
+              );
+
+              if (mediaInfo != null && mediaInfo.path != null) {
+                final compressedVideoFile = File(mediaInfo.path!);
+                final storageRef = FirebaseStorage.instance.ref().child(
+                    'chat_files/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
+                final uploadTask = storageRef.putFile(compressedVideoFile);
+
+                // Monitor the upload progress (optional)
+                uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+                  double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+                  print('Upload progress: $progress');
+                });
+
+                // Wait for the upload to complete
+                await uploadTask;
+
+                // Get the file URL
+                final fileUrl = await storageRef.getDownloadURL();
+
+                // Create a message for the compressed video
+                sendMessage("", fileUrl, 'video'); // Set an empty text for videos
+
+                print("Video Sent!");
+
+                // Close the "Sending" dialog
+                Navigator.of(context).pop();
+              } else {
+                print("Compression failed.");
+                // Close the "Sending" dialog
+                Navigator.of(context).pop();
+              }
+            } else {
+              print("File path is null.");
+              // Close the "Sending" dialog
+              Navigator.of(context).pop();
+            }
+          }
         }
-      } else {
-        // Handle permission denied
       }
     } catch (e) {
       // Handle any errors when picking and uploading files
       print("Error picking/uploading file: $e");
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -257,12 +391,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 width: 40,
                 height: 40,
                 fit: BoxFit.fill,
-                errorWidget: (context, url, error) => CircleAvatar(
+                errorWidget: (context, url, error) => const CircleAvatar(
                   child: Icon(CupertinoIcons.person),
                 ),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               width: 10,
             ),
             InkWell(
@@ -283,9 +417,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.call), // Add the call icon here
+            icon: const Icon(Icons.more_vert_rounded), // Add the call icon here
             onPressed: () {
-              // Handle the call button press here
             },
           ),
         ],
@@ -300,7 +433,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             children: [
               Expanded(
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: StreamBuilder(
                     stream: FirebaseFirestore.instance
                         .collection("chatrooms")
@@ -326,16 +459,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             },
                           );
                         } else if (snapshot.hasError) {
-                          return Center(
+                          return const Center(
                             child: Text("Something went wrong!!"),
                           );
                         } else {
-                          return Center(
+                          return const Center(
                             child: Text("Say hi to your new friend!"),
                           );
                         }
                       } else {
-                        return Center(
+                        return const Center(
                           child: CircularProgressIndicator(),
                         );
                       }
@@ -350,17 +483,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.blue.shade200, width: 2),
-                    borderRadius: BorderRadius.all(Radius.circular(35.0)),
+                    borderRadius: const BorderRadius.all(Radius.circular(35.0)),
                   ),
                   padding:
-                      EdgeInsets.only(left: 15, top: 2, bottom: 2, right: 4),
+                      const EdgeInsets.only(left: 15, top: 2, bottom: 2, right: 4),
                   child: Row(
                     children: [
                       Flexible(
                         child: TextField(
                           controller: messageController,
                           maxLines: null,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             border: InputBorder.none,
                             hintText: "Type your message...",
                           ),
@@ -370,7 +503,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           onPressed: () {
                             pickFile();
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.photo_library,
                             color: Colors.black38,
                           )),
@@ -378,7 +511,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           onPressed: () {
                             pickCamera();
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.camera_alt_rounded,
                             color: Colors.black38,
                           )),
@@ -413,7 +546,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             messageController.clear();
           }
         },
-        child: Icon(
+        child: const Icon(
           Icons.send,
           color: Colors.white,
           size: 25,
@@ -449,12 +582,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   buildTextMessage(message),
                 Text(
                   'Sent ${DateFormat('yyyy-MM-dd HH:mm').format(message.createdon!.toLocal())}',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 )
               ],
             ),
           ),
-          if (!isCurrentUser) SizedBox() // Add an empty space for alignment
+          if (!isCurrentUser) const SizedBox() // Add an empty space for alignment
         ],
       ),
     );
@@ -487,7 +620,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               width: 175,
               height: 250,
               fit: BoxFit.cover,
-              errorWidget: (context, url, error) => Center(
+              errorWidget: (context, url, error) => const Center(
                 child: Text(
                   'Error loading image',
                   style: TextStyle(color: Colors.red),
@@ -519,14 +652,14 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     return Container(
       child: Text(
         "Unsupported file type: ${message.fileType}",
-        style: TextStyle(color: Colors.red),
+        style: const TextStyle(color: Colors.red),
       ),
     );
   }
 
   Widget buildTextMessage(MessageModel message) {
     return Container(
-      padding: EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
         color: message.sender == widget.userModel.uid
             ? Colors.green[400]
@@ -535,7 +668,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       ),
       child: Text(
         message.text.toString(),
-        style: TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white),
       ),
     );
   }
@@ -556,18 +689,18 @@ Widget buildVideoThumbnail(String videoUrl) {
           height: 350,
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.white, // Border color
-              width: 3.0, // Border width
+              color: Colors.white,
+              width: 3.0,
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10), // Make it circular
+            borderRadius: BorderRadius.circular(10),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 VideoPlayer(videoPlayerController),
-                Icon(
+                const Icon(
                   Icons.play_circle_fill,
                   size: 50,
                   color: Colors.white,
@@ -576,14 +709,14 @@ Widget buildVideoThumbnail(String videoUrl) {
                   bottom: 10,
                   right: 10,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
                       durationText,
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -598,34 +731,15 @@ Widget buildVideoThumbnail(String videoUrl) {
           height: 350,
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.white, // Border color
-              width: 3.0, // Border width
+              color: Colors.white,
+              width: 3.0,
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              CachedNetworkImage(
-                imageUrl: videoUrl,
-                width: 225,
-                height: 350,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.black,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.play_circle_fill,
-                      size: 50,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              Icon(
+              const Icon(
                 Icons.play_circle_fill,
                 size: 50,
                 color: Colors.white,
@@ -634,16 +748,17 @@ Widget buildVideoThumbnail(String videoUrl) {
                 bottom: 10,
                 right: 10,
                 child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Icon(
-                      Icons.watch_later_outlined,
-                      color: Colors.white,
-                      size: 15,
-                    )),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: const Icon(
+                    Icons.watch_later_outlined,
+                    color: Colors.white,
+                    size: 15,
+                  ),
+                ),
               ),
             ],
           ),
@@ -653,8 +768,12 @@ Widget buildVideoThumbnail(String videoUrl) {
   );
 }
 
+
 String _formatDuration(Duration duration) {
   final minutes = duration.inMinutes.remainder(60);
   final seconds = duration.inSeconds.remainder(60);
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
+
+
+

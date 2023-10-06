@@ -1,14 +1,14 @@
-import 'package:chaton/models/FirebaseHelper.dart';
-import 'package:chaton/models/UserModel.dart';
 import 'package:chaton/screens/home_screen.dart';
 import 'package:chaton/screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
 import 'firebase_options.dart';
+import 'models/FirebaseHelper.dart';
+import 'models/UserModel.dart';
 
 var uuid= Uuid();
 
@@ -19,33 +19,27 @@ void main() async {
   );
 
   User? currentUser = FirebaseAuth.instance.currentUser;
-  if(currentUser != null){
-    //Not logged in
+  if (currentUser != null) {
     UserModel? thisUserModel = await FirebaseHelper.getUserModelById(currentUser.uid);
 
-    if(thisUserModel != null) {
+    if (thisUserModel != null) {
       runApp(
-          MyAppLoggedIn(userModel: thisUserModel, firebaseUser: currentUser));
-    }
-    else{
+        MyAppLoggedIn(userModel: thisUserModel, firebaseUser: currentUser),
+      );
+    } else {
       runApp(const MyApp());
     }
-  }
-  else{
-    //logged in
+  } else {
     runApp(const MyApp());
   }
-
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return const GetMaterialApp(  // Replace MaterialApp with GetMaterialApp
       debugShowCheckedModeBanner: false,
       home: LoginPage(),
     );
@@ -57,9 +51,10 @@ class MyAppLoggedIn extends StatelessWidget {
   final User firebaseUser;
 
   const MyAppLoggedIn({super.key, required this.userModel, required this.firebaseUser});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(  // Replace MaterialApp with GetMaterialApp
       debugShowCheckedModeBanner: false,
       home: HomePage(userModel: userModel, firebaseUser: firebaseUser),
     );

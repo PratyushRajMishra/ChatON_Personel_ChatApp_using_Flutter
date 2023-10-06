@@ -108,36 +108,61 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     // Show a loading indicator
     UIHelper.showLoadingDialog(context, "Updating..");
 
-    // Upload the image and get the download URL
-    UploadTask uploadTask = FirebaseStorage.instance
-        .ref("profilepictures")
-        .child(widget.userModel.uid.toString())
-        .putFile(imageFile!);
-    TaskSnapshot snapshot = await uploadTask;
-    String? imageUrl = await snapshot.ref.getDownloadURL();
+    // Create a map to store updated data
+    Map<String, dynamic> updatedData = {};
 
     // Get updated data from text controllers
     final updatedFullName = fullNameController.text.trim();
     final updatedMobile = mobileController.text.trim();
     final updatedAbout = aboutController.text.trim();
 
-    // Check if there are changes in the data
-    if (updatedFullName != widget.userModel.fullname ||
-        updatedMobile != widget.userModel.mobile ||
-        updatedAbout != widget.userModel.about ||
-        imageUrl != widget.userModel.profilepic) {
+    // Compare with the original values and add to updatedData if they are different
+    if (updatedFullName != widget.userModel.fullname) {
+      updatedData['fullname'] = updatedFullName;
+    }
+    if (updatedMobile != widget.userModel.mobile) {
+      updatedData['mobile'] = updatedMobile;
+    }
+    if (updatedAbout != widget.userModel.about) {
+      updatedData['about'] = updatedAbout;
+    }
+
+    // Check if imageFile is not null and it has changed
+    if (imageFile != null && imageFile!.path != widget.userModel.profilepic) {
+      // Upload the image and get the download URL
+      try {
+        UploadTask uploadTask = FirebaseStorage.instance
+            .ref("profilepictures")
+            .child(widget.userModel.uid.toString())
+            .putFile(imageFile!);
+        TaskSnapshot snapshot = await uploadTask;
+        String? imageUrl = await snapshot.ref.getDownloadURL();
+
+        // Add the updated image URL to updatedData
+        updatedData['profilepic'] = imageUrl;
+      } catch (error) {
+        // Handle errors related to uploading the image
+        // Close the CircularProgressIndicator dialog
+        Navigator.pop(context);
+
+        // Show an error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (updatedData.isNotEmpty) {
       try {
         // Update the data in Firebase Firestore
         await FirebaseFirestore.instance
             .collection('users')
             .doc(widget.firebaseUser.uid)
-            .update({
-          'fullname': updatedFullName,
-          'mobile': updatedMobile,
-          'about': updatedAbout,
-          'profilepic': imageUrl,
-          // Add other fields you want to update
-        });
+            .update(updatedData);
 
         // Close the CircularProgressIndicator dialog
         Navigator.pop(context);
@@ -180,6 +205,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       );
     }
   }
+
+
+
 
 
 

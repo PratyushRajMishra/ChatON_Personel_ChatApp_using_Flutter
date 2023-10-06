@@ -1,6 +1,7 @@
 import 'package:chaton/models/UIHelper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import '../models/UserModel.dart';
@@ -79,12 +80,26 @@ class _SecurityPageState extends State<SecurityPage> {
         ),
       );
     } catch (error) {
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
       print('Error changing email: $error');
       // Handle any errors here and show an error message if needed
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text("Error changing email: $error"),
+          content: Text("Login again to authenticate!"),
+          action: SnackBarAction(
+            label: 'Login again',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate to the login page and remove all previous routes
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()), // Replace with your login page widget
+                    (route) => false, // This will remove all previous routes
+              );
+            },
+          ),
         ),
       );
     }
@@ -187,12 +202,26 @@ class _SecurityPageState extends State<SecurityPage> {
         ),
       );
     } catch (error) {
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
       print('Error changing password: $error');
       // Handle any errors here and show an error message if needed
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text("Error changing password: $error"),
+          content: Text("Login again to authenticate!"),
+          action: SnackBarAction(
+            label: 'Login again',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate to the login page and remove all previous routes
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()), // Replace with your login page widget
+                    (route) => false, // This will remove all previous routes
+              );
+            },
+          ),
         ),
       );
     }
@@ -271,44 +300,117 @@ class _SecurityPageState extends State<SecurityPage> {
   }
 
 
-  void deleteAccount() {
+  void deleteAccount() async {
+    bool isDeleting = false; // Flag to track if deletion is in progress
+
+    // Show a confirmation dialog
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevent closing the dialog while deleting
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          title:  Text("Delete ${widget.userModel.fullname} ?",),
-          content: const Text(
-            'This account is permanently deleted, this messages and media are also deleted permanently.',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'Cancel'),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(fontSize: 17, color: Colors.black),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  Navigator.pop(context);
+              title: Text("Delete ${widget.userModel.fullname} ?"),
+              content: isDeleting
+                  ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Deleting...',
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ],
+              )
+                  : const Text(
+                'This account will be permanently deleted, including messages, profile picture, and chat files.',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              actions: <Widget>[
+                if (!isDeleting)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, 'Cancel'),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(fontSize: 17, color: Colors.black),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      setState(() {
+                        isDeleting = true; // Set the flag to true while deleting
+                      });
 
-                });
-              },
-              child: const Text(
-                'Delete Account',
-                style: TextStyle(fontSize: 17, color: Colors.red),
-              ),
-            ),
-          ],
+                      // Delete user data from Firebase Firestore
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(widget.firebaseUser.uid)
+                          .delete();
+
+                      // Delete user profile picture from Firebase Storage
+                      await FirebaseStorage.instance
+                          .ref("profilepictures")
+                          .child(widget.firebaseUser.uid)
+                          .delete();
+
+                      // Delete user's account from Firebase Authentication
+                      await widget.firebaseUser.delete();
+
+                      // Sign out the user
+                      await FirebaseAuth.instance.signOut();
+
+                      // Navigate to the LoginPage
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LoginPage(), // Replace with your login page widget
+                        ),
+                      );
+
+                    } catch (error) {
+                      // Handle errors
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.red,
+                          content: Text("Error: $error"),
+                          action: SnackBarAction(
+                            label: 'Login again',
+                            textColor: Colors.white,
+                            onPressed: () {
+                              // Navigate to the login page and remove all previous routes
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginPage(), // Replace with your login page widget
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Delete Account',
+                    style: TextStyle(fontSize: 17, color: Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
