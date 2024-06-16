@@ -5,19 +5,18 @@ power of this versatile open-source UI framework to deliver a seamless and
 dynamic user experience. Flutter’s cross-platform compatibility allows
 ChatON to run smoothly on both iOS and Android devices.
 
-# LOGIN SCREEN
+## LOGIN SCREEN
 
-![Capture](https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/LoginPage.jpeg)
+<img src="https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/LoginPage.jpeg" alt="Login Screen" width="400">
 
-# CHAT SCREEN
+## CHAT SCREEN
 
-![Capture1](https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/ChatScreenPage.jpeg)
+<img src="https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/ChatScreenPage.jpeg" alt="Chat Screen" width="400">
 
+## USER LIST
 
-# USER LIST
+<img src="https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/UserlistPage.jpeg" alt="User List" width="400">
 
-![Capture3](https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/UserlistPage.jpeg)
+## PROFILE PAGE
 
-# PROFILE PAGE
-![Capture2](https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/ProfilePage.jpeg)
-
+<img src="https://github.com/PratyushRajMishra/ChatON_Personel_ChatApp_using_Flutter/blob/main/assets/screenshots/ProfilePage.jpeg" alt="Profile Page" width="400">
